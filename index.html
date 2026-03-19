@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chocopon</title>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #010003 0%, #0a0515 35%, #150e25 70%, #1f1230 100%);
+            background-attachment: fixed;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .glowing-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 18px;
+            background: linear-gradient(to bottom, #3a0a5e, #b27af2, #d9b0ff);
+            box-shadow: 0 0 10px #b27af2, 0 0 20px #7a3fb0;
+            opacity: 0.6;
+            animation: fall linear infinite;
+            transform: rotate(-25deg);
+            border-radius: 1px;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: rotate(-25deg) translateY(-120px);
+                opacity: 0.6;
+            }
+            70% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: rotate(-25deg) translateY(120vh);
+                opacity: 0;
+            }
+        }
+
+        .background-visualizer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            background: radial-gradient(circle at 50% 50%, transparent 0%, #010003 95%);
+        }
+
+        .background-visualizer.visible {
+            opacity: 0.25;
+        }
+
+        .bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 12px;
+            height: 60vh;
+        }
+
+        .bar-up, .bar-down {
+            width: 12px;
+            background: #9f5fd6;
+            transition: height 0.1s linear;
+            box-shadow: 0 0 5px #9f5fd6;
+            will-change: height;
+        }
+
+        .bar-up {
+            border-radius: 20px 20px 0 0;
+            margin-bottom: 2px;
+            transform-origin: bottom;
+        }
+
+        .bar-down {
+            border-radius: 0 0 20px 20px;
+            margin-top: 2px;
+            transform-origin: top;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .click-text {
+            color: white;
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: lowercase;
+            text-shadow: 0 0 15px rgba(180, 100, 255, 0.5);
+            background: linear-gradient(135deg, #fff, #e0b0ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .glass-card {
+            max-width: 700px;
+            width: 100%;
+            background: rgba(20, 10, 30, 0.75);
+            border-radius: 48px;
+            padding: 2.8rem 2.5rem;
+            box-shadow: 0 30px 50px -16px rgba(0, 0, 0, 0.9),
+                        0 0 0 1px rgba(210, 160, 250, 0.25) inset;
+            border: 1px solid rgba(210, 160, 250, 0.2);
+            color: #f0eaff;
+            opacity: 0;
+            transform: scale(0.9) translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.1), transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+            position: relative;
+            z-index: 3;
+        }
+
+        .glass-card.visible {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .avatar {
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 1.5rem auto;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid rgba(220, 180, 255, 0.9);
+            box-shadow: 0 0 40px #b27af2, 0 0 80px #7a3fb0, 0 18px 28px -10px #000000;
+            background: #2a1a33;
+            transition: transform 0.2s ease;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .avatar:hover {
+            transform: scale(1.03);
+        }
+
+        .name {
+            text-align: center;
+            font-weight: 800;
+            font-size: 3rem;
+            letter-spacing: -0.02em;
+            margin-bottom: 2rem;
+            background: linear-gradient(90deg, 
+                #7a3fb0 0%, 
+                #b27af2 20%, 
+                #d9b0ff 40%, 
+                #b27af2 60%, 
+                #7a3fb0 80%, 
+                #4a1d6e 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: waveFlow 4s linear infinite;
+            text-shadow: 0 0 10px rgba(180, 100, 255, 0.3);
+        }
+
+        @keyframes waveFlow {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .links-section {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            margin: 1.5rem 0 0.5rem 0;
+        }
+
+        .link-item {
+            background: rgba(18, 10, 28, 0.65);
+            border: 2px solid rgba(200, 150, 250, 0.6);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 15px -6px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        .link-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            transition: transform 0.2s ease;
+        }
+
+        .link-item:hover {
+            transform: scale(1.08);
+            border-color: rgba(240, 190, 255, 0.9);
+            background: rgba(90, 55, 140, 0.8);
+            box-shadow: 0 0 25px rgba(200, 150, 255, 0.7), 0 8px 15px -6px rgba(0, 0, 0, 0.8);
+        }
+
+        .link-item:hover img {
+            transform: scale(1.1);
+        }
+
+        .error-message {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #ff6b6b;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            z-index: 10000;
+            display: none;
+            border: 1px solid #ff6b6b;
+        }
+
+        #audio-player {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .glass-card {
+                padding: 2rem 1.5rem;
+                border-radius: 36px;
+                max-width: 90%;
+            }
+            .name {
+                font-size: 2.5rem;
+            }
+            .avatar {
+                width: 90px;
+                height: 90px;
+            }
+            .link-item {
+                width: 60px;
+                height: 60px;
+            }
+            .link-item img {
+                width: 32px;
+                height: 32px;
+            }
+            .links-section {
+                gap: 0.8rem;
+            }
+            .click-text {
+                font-size: 2.2rem;
+            }
+            .bar-container {
+                width: 8px;
+            }
+            .bar-up, .bar-down {
+                width: 8px;
+            }
+        }
+
+        @media (max-width: 450px) {
+            .link-item {
+                width: 55px;
+                height: 55px;
+            }
+            .link-item img {
+                width: 28px;
+                height: 28px;
+            }
+            .bar-container {
+                width: 6px;
+            }
+            .bar-up, .bar-down {
+                width: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="glowing-rain" id="glowingRain"></div>
+
+    <div class="error-message" id="errorMessage"></div>
+
+    <div class="background-visualizer" id="backgroundVisualizer"></div>
+
+    <div class="overlay" id="clickOverlay">
+        <div class="click-text">click me</div>
+    </div>
+
+    <audio id="audio-player" preload="auto" loop></audio>
+
+    <div class="glass-card" id="mainCard">
+        <div class="avatar">
+            <img src="https://images-ext-1.discordapp.net/external/MAp8QLESkbc273P2UANLaos5J2WIFq_at2gxIL7Ic9I/%3Fsize%3D512/https/cdn.discordapp.com/avatars/1215260574104031264/d5f2e3c19ae9ed05c194fba4dbc7c009.png?format=webp&quality=lossless&width=230&height=230" 
+                 alt="chocopie"
+                 loading="lazy"
+                 onerror="this.src='https://via.placeholder.com/110?text=pfp'">
+        </div>
+
+        <div class="name">
+            chocopie
+        </div>
+
+        <div class="links-section">
+            <a href="https://www.tiktok.com/@chocopie9_8" class="link-item" target="_blank" rel="noopener">
+                <img src="./assets/tt.png" alt="tt" onerror="this.src='https://via.placeholder.com/40?text=tt'">
+            </a>
+            <a href="https://www.instagram.com/chocopie_bon/" class="link-item" target="_blank" rel="noopener">
+                <img src="./assets/ig.png" alt="ig" onerror="this.src='https://via.placeholder.com/40?text=ig'">
+            </a>
+            <a href="https://discord.com/users/1215260574104031264" class="link-item" target="_blank" rel="noopener">
+                <img src="./assets/dc.png" alt="dc" onerror="this.src='https://via.placeholder.com/40?text=dc'">
+            </a>
+            <a href="https://www.roblox.com/vi/users/4217171024/profile" class="link-item" target="_blank" rel="noopener">
+                <img src="./assets/rblx.png" alt="rblx" onerror="this.src='https://via.placeholder.com/40?text=rblx'">
+            </a>
+            <a href="https://www.facebook.com/chocopie.bonn/" class="link-item" target="_blank" rel="noopener">
+                <img src="./assets/fb.png" alt="fb" onerror="this.src='https://via.placeholder.com/40?text=fb'">
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const overlay = document.getElementById('clickOverlay');
+        const audio = document.getElementById('audio-player');
+        const mainCard = document.getElementById('mainCard');
+        const bgVisualizer = document.getElementById('backgroundVisualizer');
+        const glowingRain = document.getElementById('glowingRain');
+        const errorMessage = document.getElementById('errorMessage');
+
+        audio.volume = 0.36;
+        
+        function showError(msg) {
+            errorMessage.textContent = '⚠️ ' + msg;
+            errorMessage.style.display = 'block';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        const dropCount = 50;
+        for (let i = 0; i < dropCount; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'rain-drop';
+            drop.style.left = (Math.random() * 140 - 20) + '%';
+            drop.style.top = -Math.random() * 100 + '%';
+            const scale = 0.5 + Math.random() * 1;
+            drop.style.height = (18 * scale) + 'px';
+            drop.style.width = (2 * scale) + 'px';
+            const duration = 5 + Math.random() * 7;
+            drop.style.animationDuration = duration + 's';
+            drop.style.animationDelay = -Math.random() * 15 + 's';
+            drop.style.opacity = 0.2 + Math.random() * 0.4;
+            glowingRain.appendChild(drop);
+        }
+
+        const barCount = 35;
+        for (let i = 0; i < barCount; i++) {
+            const container = document.createElement('div');
+            container.className = 'bar-container';
+            const barUp = document.createElement('div');
+            barUp.className = 'bar-up';
+            const barDown = document.createElement('div');
+            barDown.className = 'bar-down';
+            container.appendChild(barUp);
+            container.appendChild(barDown);
+            bgVisualizer.appendChild(container);
+        }
+        
+        const barContainers = document.querySelectorAll('.bar-container');
+        
+        let audioContext = null;
+        let analyser = null;
+        let source = null;
+        let animationFrame = null;
+        let isPlaying = false;
+        let visualizerInitialized = false;
+
+        function initVisualizer() {
+            if (visualizerInitialized) return;
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 128;
+                source = audioContext.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                visualizerInitialized = true;
+            } catch (e) {
+                console.warn('visualizer init failed:', e);
+            }
+            visualize();
+        }
+
+        function visualize() {
+            if (!analyser) {
+                animationFrame = requestAnimationFrame(visualize);
+                return;
+            }
+            
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            function updateBars() {
+                if (!analyser) {
+                    animationFrame = requestAnimationFrame(updateBars);
+                    return;
+                }
+                
+                if (isPlaying) {
+                    try {
+                        analyser.getByteFrequencyData(dataArray);
+                        barContainers.forEach((container, index) => {
+                            const barUp = container.querySelector('.bar-up');
+                            const barDown = container.querySelector('.bar-down');
+                            const dataIndex = Math.floor(index * (bufferLength / barContainers.length));
+                            const value = dataIndex < bufferLength ? dataArray[dataIndex] : 0;
+                            const maxHeight = window.innerHeight * 0.15;
+                            const height = Math.max(2, (value / 255) * maxHeight);
+                            barUp.style.height = height + 'px';
+                            barDown.style.height = height + 'px';
+                            const intensity = 0.3 + (value / 255) * 0.5;
+                            const color = `rgba(159, 95, 214, ${intensity})`;
+                            barUp.style.background = color;
+                            barDown.style.background = color;
+                        });
+                    } catch (e) {
+                        console.log('visualizer error:', e);
+                    }
+                } else {
+                    const time = Date.now() * 0.001;
+                    barContainers.forEach((container, index) => {
+                        const barUp = container.querySelector('.bar-up');
+                        const barDown = container.querySelector('.bar-down');
+                        const idleHeight = 5 + Math.sin(time + index) * 3;
+                        barUp.style.height = idleHeight + 'px';
+                        barDown.style.height = idleHeight + 'px';
+                        barUp.style.background = '#6a3a9e';
+                        barDown.style.background = '#6a3a9e';
+                    });
+                }
+                
+                animationFrame = requestAnimationFrame(updateBars);
+            }
+            
+            updateBars();
+        }
+
+        overlay.addEventListener('click', function() {
+            mainCard.classList.add('visible');
+            bgVisualizer.classList.add('visible');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+
+            audio.src = './Clara La San - Want U.mp3';
+            audio.volume = 0.36;
+
+            const tryPlay = () => {
+                initVisualizer();
+                audio.play().then(() => {
+                    isPlaying = true;
+                }).catch(e => {
+                    console.error('play() failed:', e);
+                    document.addEventListener('click', tryPlay, { once: true });
+                });
+            };
+            tryPlay();
+        });
+
+        audio.addEventListener('play', () => {
+            isPlaying = true;
+        });
+
+        audio.addEventListener('pause', () => {
+            isPlaying = false;
+        });
+
+        audio.addEventListener('ended', () => {
+            isPlaying = false;
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log('loop failed:', e));
+        });
+
+        audio.addEventListener('error', (e) => {
+            console.error('audio error:', e);
+        });
+
+        document.body.style.overflow = 'hidden';
+        
+        window.addEventListener('beforeunload', () => {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+            if (audioContext) {
+                audioContext.close();
+            }
+        });
+    </script>
+</body>
+</html>
